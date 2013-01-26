@@ -1,0 +1,210 @@
+
+/* color de l'enllaç en els blocs de la home per a llegir més elements*/
+ 
+ .GERMLLEGIRMES 
+ {
+ 		margin-top: 10px;		
+ }
+ 
+ .GERMLLEGIRMES a:visited, .GERMLLEGIRMES a
+{
+	color: #8c2214;
+	font-size:12px;
+	text-decoration: none;	
+}
+
+/* per a definir el text del títol i el body del block de color blanc */
+.GERMTEXTBLANC 
+{
+	color: #FFFFFF !important;
+}
+
+.germ-blk-tag-icon
+{
+/* //No volem la icona d'advertència
+    height: 30px;
+    width: 30px;
+	background-position:left top;
+	background-image: url('images-2/exclamacio.gif');
+	padding:0 0 0 30px;
+	background-repeat: no-repeat;
+	min-height: 20px;
+	margin: 0 0 0 5px;
+*/
+}
+
+.BlockHeader-NOTIS .l, .BlockHeader-NOTIS .r
+{
+	
+	background-image: url('images-BLKHOME/BlockHeader-NOTIS.png') !important; 
+}
+
+
+
+.BlockHeader-DOCS .l, .BlockHeader-DOCS .r
+{
+	
+	background-image: url('images-BLKHOME/BlockHeader-DOCS.png') !important; 
+}
+
+/* ----------------------- Block de la HOMEPAGE - NOTIS ------------------ */
+
+/* Per a fer 'override' del padding a 4px*/
+.art-Block-body-BLKHOME 
+{
+	padding:4px;
+}
+
+.art-BlockHeader-BLKHOME
+{
+	position:relative;
+	z-index:0;
+	height: 30px;
+	padding: 0 7px;
+	margin-bottom: 0px;
+}
+
+
+.art-BlockHeader-BLKHOME .t
+{
+	height: 30px;
+	color: #95A39C;
+font-family: Arial, Helvetica, Sans-Serif;
+font-size: 13px;
+font-style: normal;
+font-weight: bold;
+	white-space : nowrap;
+	padding: 0 1px;
+	line-height: 30px;	
+}
+
+.art-BlockHeader-BLKHOME .l, .art-BlockHeader-BLKHOME .r
+{
+	display:block;
+	position:absolute;
+	z-index:-1;
+	height: 30px;
+
+}
+
+.art-BlockHeader-BLKHOME .l
+{
+	left:0;
+	right:0px;
+}
+
+.art-BlockHeader-BLKHOME .r
+{ 
+	width:980px;
+	right:0;
+	clip: rect(auto auto auto 980px);
+}
+
+
+.art-BlockHeader-BLKHOME .t h2.subject
+{
+	height: 30px;
+	color: #FFFFFF;
+font-family: Arial, Helvetica, Sans-Serif;
+font-size: 13px;
+font-style: normal;
+font-weight: bold;
+	white-space : nowrap;
+	padding: 0 1px;
+	line-height: 30px;
+	top: 0;
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+/* end BlockHeader */
+
+
+
+/* Pels blocs de la homepage (la part de sota el header) només ens interessa l'estil art-BlockContent combinat amb les
+	 cantonades per a generar el requadre
+*/
+
+
+
+
+
+
+
+
+/* ----------------------- Contenidors per la homepage ------------------ */
+#contenedor1 {
+	width:700px;
+	margin:0px;
+	padding:0px;
+	border: 0px;
+	
+	text-align:left;
+	height: 100%;	
+
+	background-color:#CCFFcc;	
+	
+	/*border:1px solid #000000;*/
+
+	}
+	
+	
+#contenedor2 {
+	width:700px;
+	margin:1px auto;
+	padding:1px;
+	text-align:left;
+	height: 100%;	
+	
+
+	/* debug background-color:#ccccFF; */
+	/*border:1px solid #000000;*/
+	
+	}
+	
+	/*MOLT IMPORTANT: permet que en Firefox, un DIV que conté elements en float dimensioni la seva height al 100% */
+	#clearing {
+      clear:both;
+   }
+   
+
+#home1 {
+	float:left;
+	margin:0px;
+	padding:0px;
+	border: 0px;
+	width:350px;
+	display:inline;
+	}
+
+
+#home2 {
+	float:left;
+	margin:0px;
+	padding:0pxpx;
+	border: 0px;
+	width:350px;
+	display:inline;
+	}
+
+
+
+
+  #home3 {
+	float:left;
+	margin:1px 1px auto 0;
+	padding:1px;
+	width:380px;
+	display:inline;
+	}
+
+
+#home4 {
+	float:left;
+	margin:1px 11px auto 0;
+	padding:1px;
+	width:150px;
+	display:inline;
+	}
+
+
