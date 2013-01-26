@@ -1,0 +1,341 @@
+
+/* color de l'enllaç en els blocs de la home per a llegir més elements*/
+ 
+ .GERMLLEGIRMES 
+ {
+ 		margin-top: 10px;		
+ }
+ 
+ .GERMLLEGIRMES a:visited, .GERMLLEGIRMES a
+{
+	color: #8c2214;
+	font-size:11px;
+	text-decoration: none;	
+}
+
+/* per a definir el text del títol i el body del block de color blanc */
+.GERMTEXTBLANC 
+{
+	color: #FFFFFF !important;
+}
+
+.germ-blk-tag-icon
+{
+/* //No volem la icona d'advertència
+    height: 30px;
+    width: 30px;
+	background-position:left top;
+	background-image: url('images-2/exclamacio.gif');
+	padding:0 0 0 30px;
+	background-repeat: no-repeat;
+	min-height: 20px;
+	margin: 0 0 0 5px;
+*/
+}
+
+.BlockHeader-NOTIS .l, .BlockHeader-NOTIS .r
+{
+	
+	background-image: url('images-BLKHOME/BlockHeader-NOTIS.png') !important; 
+}
+
+.BlockHeader-ANUNCIS .l, .BlockHeader-ANUNCIS .r
+{
+	
+	background-image: url('images-BLKHOME/BlockHeader-ANUNCIS.png') !important; 
+}
+
+.BlockHeader-DOCS .l, .BlockHeader-DOCS .r
+{
+	
+	background-image: url('images-BLKHOME/BlockHeader-DOCS.png') !important; 
+}
+
+/* ----------------------- Block de la HOMEPAGE - NOTIS ------------------ */
+
+/* Per a fer 'override' del padding a 4px*/
+.art-Block-body-BLKHOME 
+{
+	padding:4px;
+}
+
+.art-BlockHeader-BLKHOME
+{
+	position:relative;
+	z-index:0;
+	height: 30px;
+	padding: 0 7px;
+	margin-bottom: 0px;
+}
+
+
+.art-BlockHeader-BLKHOME .t
+{
+	height: 30px;
+	color: #95A39C;
+font-family: Arial, Helvetica, Sans-Serif;
+font-size: 12px;
+font-style: normal;
+font-weight: bold;
+	white-space : nowrap;
+	padding: 0 1px;
+	line-height: 30px;	
+}
+
+.art-BlockHeader-BLKHOME .l, .art-BlockHeader-BLKHOME .r
+{
+	display:block;
+	position:absolute;
+	z-index:-1;
+	height: 30px;
+
+}
+
+.art-BlockHeader-BLKHOME .l
+{
+	left:0;
+	right:0px;
+}
+
+.art-BlockHeader-BLKHOME .r
+{ 
+	width:980px;
+	right:0;
+	clip: rect(auto auto auto 980px);
+}
+
+
+.art-BlockHeader-BLKHOME .t h2.subject
+{
+	height: 30px;
+	color: #FFFFFF;
+font-family: Arial, Helvetica, Sans-Serif;
+font-size: 12px;
+font-style: normal;
+font-weight: bold;
+	white-space : nowrap;
+	padding: 0 1px;
+	line-height: 30px;
+	top: 0;
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+/* end BlockHeader */
+
+
+
+/* Pels blocs de la homepage (la part de sota el header) només ens interessa l'estil art-BlockContent combinat amb les
+	 cantonades per a generar el requadre
+*/
+.art-BlockContent-tr, .art-BlockContent-tl, .art-BlockContent-br, .art-BlockContent-bl, .art-BlockContent-tc, .art-BlockContent-bc,.art-BlockContent-cr, .art-BlockContent-cl
+{
+	position:absolute;
+	z-index:-1;
+}
+
+.art-BlockContent-tr, .art-BlockContent-tl, .art-BlockContent-br, .art-BlockContent-bl
+{
+	width: 2px;
+	height: 2px;
+	background-image: url('images-BLKHOME/BlockContent-s.png');
+}
+
+.art-BlockContent-tl
+{
+	top:0;
+	left:0;
+	clip: rect(auto 1px 1px auto);
+}
+
+.art-BlockContent-tr
+{
+	top: 0;
+	right: 0;
+	clip: rect(auto auto 1px 1px);
+}
+
+.art-BlockContent-bl
+{
+	bottom: 0;
+	left: 0;
+	clip: rect(1px 1px auto auto);
+}
+
+.art-BlockContent-br
+{
+	bottom: 0;
+	right: 0;
+	clip: rect(1px auto auto 1px);
+}
+
+.art-BlockContent-tc, .art-BlockContent-bc
+{
+	left: 1px;
+	right: 1px;
+	height: 2px;
+	background-image: url('images-BLKHOME/BlockContent-h.png');
+}
+
+.art-BlockContent-tc
+{
+	top: 0;
+	clip: rect(auto auto 1px auto);
+}
+
+.art-BlockContent-bc
+{
+	bottom: 0;
+	clip: rect(1px auto auto auto);
+}
+
+.art-BlockContent-cr, .art-BlockContent-cl
+{
+	top: 1px;
+	bottom: 1px;
+	width: 2px;
+	background-image: url('images-BLKHOME/BlockContent-v.png');
+}
+
+.art-BlockContent-cr
+{
+	right:0;
+	clip: rect(auto auto auto 1px);
+}
+
+.art-BlockContent-cl
+{
+	left:0;
+	clip: rect(auto 1px auto auto);
+}
+
+.art-BlockContent-cc
+{
+	position:absolute;
+	z-index:-1;
+	top: 1px;
+	left: 1px;
+	right: 1px;
+	bottom: 1px;
+	background-color: #fafafa; /* Color de fons dels panells de la homepage*/
+}
+
+
+
+/* ----------------------- Block de la HOMEPAGE - AVISOS ------------------ */
+
+.art-Block-tr-2, .art-Block-tl-2, .art-Block-br-2, .art-Block-bl-2
+{
+	/*width: 26px;
+	height: 26px;*/
+	background-image: url('images-2/Block-s.png') !important;
+}
+
+.art-Block-tc-2, .art-Block-bc-2
+{
+	/*left: 13px;
+	right: 13px;
+	height: 26px;*/
+	background-image: url('images-2/Block-h.png') !important;
+}
+
+.art-Block-cr-2, .art-Block-cl-2
+{
+	/*top: 13px;
+	bottom: 13px;
+	width: 26px;*/
+	background-image: url('images-2/Block-v.png') !important;
+}
+
+.art-Block-cc-2
+{
+	/*position:absolute;
+	z-index:-1;
+	top: 13px;
+	left: 13px;
+	right: 13px;
+	bottom: 13px;*/
+	background-color: #FFc5c5 !important; 
+	background-image: url('images-2/Block-c.png');
+}
+
+
+
+
+
+/* ----------------------- Contenidors per la homepage ------------------ */
+#contenedor1 {
+	width:580px;
+	margin:0px;
+	padding:0px;
+	border: 0px;
+	
+	text-align:left;
+	height: 100%;	
+
+	background-color:#CCFFcc;	
+	
+	/*border:1px solid #000000;*/
+
+	}
+	
+	
+#contenedor2 {
+	width:580px;
+	margin:1px auto;
+	padding:1px;
+	text-align:left;
+	height: 100%;	
+	
+
+	/* debug background-color:#ccccFF; */
+	/*border:1px solid #000000;*/
+	
+	}
+	
+	/*MOLT IMPORTANT: permet que en Firefox, un DIV que conté elements en float dimensioni la seva height al 100% */
+	#clearing {
+      clear:both;
+   }
+   
+
+#home1 {
+	float:left;
+	margin:0px;
+	padding:0px;
+	border: 0px;
+	width:290px;
+	display:inline;
+	}
+
+
+#home2 {
+	float:left;
+	margin:0px;
+	padding:0pxpx;
+	border: 0px;
+	width:290px;
+	display:inline;
+	}
+
+
+
+#home3 {
+	float:left;
+	margin:1px 1px auto 0;
+	padding:1px;
+	width:380px;
+	display:inline;
+	}
+
+
+#home4 {
+	float:left;
+	margin:1px 11px auto 0;
+	padding:1px;
+	width:150px;
+	display:inline;
+	}
+
+
+
