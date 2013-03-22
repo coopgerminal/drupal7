@@ -14,23 +14,44 @@
  */
 function uc_product_menu() {
   $items = array();
-
-  $items['admin/store/products'] = array(
+ /* germinal */
+   $items['admin/store/products'] = array(
     'title' => 'Products',
     'description' => 'Administer products, classes, and more.',
     'page callback' => 'drupal_goto',
-    'page arguments' => array('admin/store/products/view'),
+    'page arguments' => array('admin/store/products/llista'),
     'access arguments' => array('administer products'),
-    'weight' => -2,
-    'position' => 'left',
+    'weight' => 2,
+    'position' => 'right',
   );
-  // admin/store/products/view is provided by Views.
+
+  $items['admin/store/products/habilitacio'] = array(
+    'title' => 'Activation by provider',
+    'description' => 'Product activation and deactivation by provider.',
+    'page callback' => 'uc_product_habilitacio',
+    'access arguments' => array('administer products'),
+     'weight' => -2,
+    // 'position' => 'left',
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_product.admin.inc',
+  );
+      $items['admin/store/products/llista'] = array(
+    'title' => 'Products',
+    'description' => 'Administer products, classes, and more.',
+    'access arguments' => array('administer products'),
+    'page callback' => 'uc_product_administration',
+   'type' => MENU_NORMAL_ITEM,
+   'weight' => -2,
+    'file' => 'uc_product.admin.inc',
+  );
+  /*end germinal */
   $items['admin/store/products/classes'] = array(
     'title' => 'Manage classes',
     'description' => 'Create and edit product node types.',
     'access arguments' => array('administer product classes'),
     'page callback' => 'uc_product_class_default',
     'weight' => -2,
+     'type' => MENU_NORMAL_ITEM,
     'file' => 'uc_product.admin.inc',
   );
   $items['admin/store/settings/products'] = array(
@@ -375,6 +396,7 @@ function uc_product_form($node, $form_state) {
       ),
     ),
   );
+/* Germinal
   $form['base']['model'] = array(
     '#type' => 'textfield',
     '#title' => t('SKU'),
@@ -384,13 +406,13 @@ function uc_product_form($node, $form_state) {
     '#weight' => 0,
     '#size' => 32,
   );
-
+ Germinal */
   $form['base']['prices'] = array(
     '#type' => 'container',
     '#attributes' => array('class' => array('uc-inline-form', 'clearfix')),
     '#weight' => 5,
   );
-
+/* germinal
   $form['base']['prices']['list_price'] = array(
     '#type' => 'uc_price',
     '#title' => t('List price'),
@@ -398,14 +420,74 @@ function uc_product_form($node, $form_state) {
     '#description' => t('The listed MSRP.'),
     '#weight' => 0,
   );
-  $form['base']['prices']['cost'] = array(
+*/
+/*germinal
+els camps dels nodes especifics de germinal es llegeixen de la base de dades
+veure uc_product_load,update,
+ */
+
+
+  $form['base']['codi'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Codi'),
+    '#default_value' => $node->codi,
+    '#description' => t("Codi del producte per a facturació."),
+    '#weight' => 1,
+  );
+
+
+  $form['base']['cost'] = array(
     '#type' => 'uc_price',
     '#title' => t('Cost'),
     '#default_value' => $node->cost,
     '#description' => t("Your store's cost."),
-    '#weight' => 1,
+    '#weight' => 2,
   );
-  $form['base']['prices']['sell_price'] = array(
+
+  $form['base']['marge'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Marge aplicat al producte (%): '),
+    '#default_value' => $node->marge,
+    '#weight' => 4,
+    '#size' => 5,
+  );
+
+    $form['base']['habilitat'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Producte habilitat.'),
+    '#default_value' => $node->habilitat,
+    '#weight' => 3,
+  );
+
+    $form['base']['producte_comu'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Compra conjunta a tots els centres.'),
+    '#default_value' => $node->producte_comu,
+    '#description' => t(""),
+    '#weight' => 3,
+   );
+
+	$form['base']['per_unitats'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disponible per unitats.'),
+    '#default_value' => $node->per_unitats,
+     '#weight' => 3,
+  );
+  	$form['base']['separador'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Separador de productes.'),
+    '#default_value' => $node->separador,
+     '#weight' => 3,
+  );
+
+     $form['base']['proveidor'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Proveïdor del producte:'),
+    '#default_value' => $node->proveidor,
+    '#weight' => 5,
+  );
+
+  /*$form['base']['prices']['sell_price'] = array(
     '#type' => 'uc_price',
     '#title' => t('Sell price'),
     '#required' => TRUE,
@@ -522,7 +604,8 @@ function uc_product_form($node, $form_state) {
       '#value' => $node->default_qty,
     );
   }
-
+*/
+/*end germinal */
   $form['base']['ordering'] = array(
     '#type' => 'weight',
     '#title' => t('List position'),
@@ -554,6 +637,14 @@ function uc_product_prepare($node) {
     'default_qty' => 1,
     'shippable' => variable_get('uc_product_shippable_' . $node->type, 1),
     'ordering' => 0,
+    // germinal :
+    'codi' => '',
+    'habilitat'=>'',
+    'producte_comu'=>'',
+    'per_unitats'=>'',
+    'separador'=>'',
+    'marge'=>'',
+    'proveidor'=>'',
   );
 
   foreach ($defaults as $key => $value) {
@@ -578,7 +669,12 @@ function uc_product_insert($node) {
   }
 
   if (!isset($node->unique_hash)) {
-    $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable . REQUEST_TIME);
+
+  	// germinal: add germinal columns, assign a centre according to the logged user
+  	$centre = uc_product_get_informacio_centre();
+  	$node->sell_price =  $node->cost * (100+$node->marge)/100;
+   $node->unique_hash = md5($node->vid . $node->nid . $node->model . $node->list_price . $node->cost . $node->sell_price . $node->weight . $node->weight_units . $node->length . $node->width . $node->height . $node->length_units . $node->pkg_qty . $node->default_qty . $node->shippable .
+     $node->codi .  $node->habilitat . $node->producte_comu . $centre->uid . $node->per_unitats . $node->separador.  $node->marge .  $node->proveidor. REQUEST_TIME);
   }
 
   drupal_write_record('uc_products', $node);
@@ -598,7 +694,13 @@ function uc_product_update($node) {
     $node->height = $node->dim_height;
   }
 
+  // germinal
+  $node->sell_price =  $node->cost * (100+$node->marge)/100;
+  // end germinal
   if (!empty($node->revision)) {
+  	 // germinal
+  	 $node->centre = uc_product_get_informacio_centre();
+  	 // end germinal
     drupal_write_record('uc_products', $node);
   }
   else {
@@ -614,8 +716,11 @@ function uc_product_load($nodes) {
   foreach ($nodes as $node) {
     $vids[$node->nid] = $node->vid;
   }
-
-  $result = db_query('SELECT nid, model, list_price, cost, sell_price, weight, weight_units, length, width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable FROM {uc_products} WHERE vid IN (:vids)', array(':vids' => $vids));
+	// Germinal  : add : codi, habilitat, producte_comu, per_unitats, separador, marge, proveidor
+  $result = db_query('SELECT nid, model, list_price, cost, sell_price, weight, weight_units, length,
+  		width, height, length_units, pkg_qty, default_qty, unique_hash, ordering, shippable
+		  		, codi, habilitat, producte_comu, per_unitats, separador, marge, proveidor
+  		 FROM {uc_products} WHERE vid IN (:vids)', array(':vids' => $vids));
   foreach ($result as $node) {
     foreach ($node as $field => $value) {
       $nodes[$node->nid]->$field = $value;
@@ -1112,10 +1217,12 @@ function uc_product_uc_cart_display($item) {
 function uc_product_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL) {
   if (!$nid) return NULL;
   $cid = !(is_null($cid) || empty($cid)) ? $cid : uc_cart_get_id();
-  if ($qty < 1) {
-    uc_cart_remove_item($nid, $cid, $data);
-  }
-  else {
+  //germinal
+  //if ($qty < 1 ) {
+  // uc_cart_remove_item($nid, $cid, $data);
+  //}
+  //else {
+    if($qty!=''){
     db_update('uc_cart_products')
       ->fields(array(
         'qty' => $qty,
@@ -1126,6 +1233,7 @@ function uc_product_uc_update_cart_item($nid, $data = array(), $qty, $cid = NULL
       ->condition('data', serialize($data))
       ->execute();
   }
+  //}
 }
 
 /**
@@ -1889,4 +1997,172 @@ function uc_product_action_info() {
  */
 function uc_product_action_add_to_cart($product, $context = array()) {
   uc_cart_add_item($product->nid, 1, NULL, NULL, TRUE, FALSE, TRUE);
+}
+
+
+/// germinal : get center of logged user
+function uc_product_get_informacio_centre() {
+  global $user;
+  $query = db_select('uc_socis' , 'u');
+  $query->condition( 'u.uid' , $user->uid , '=' );
+  $query->fields('u',array('centre'));
+  $centre =  $query->execute()->fetchAssoc();
+  return($centre['centre']);
+}
+
+function uc_product_table_header() {
+  $columns = array();
+
+  $columns['habilitat'] = array(
+    'weight' => -6,
+    'cell' => array('data' => t('Habilitat')),
+  );
+
+  if (module_exists('imagecache')) {
+    $columns['image'] = array(
+      'weight' => -5,
+      'cell' => array('data' => t('Image')),
+    );
+  }
+  $columns['name'] = array(
+    'weight' => 0,
+    'cell' => array('data' => t('Name')),
+  );
+  $columns['codi'] = array(
+    'weight' => 4,
+    'cell' => array('data' => t('Codi')),
+  );
+  $columns['price'] = array(
+    'weight' => 5,
+    'cell' => array('data' => t('Cost')),
+  );
+
+  if (module_exists('uc_cart') && (arg(0) != 'admin' || $_GET['q'] == 'admin/store/settings/tables/uc_product_table')) {
+    $columns['add_to_cart'] = array(
+      'weight' => 10,
+      'cell' => array('data' => t('Add to cart'), 'nowrap' => 'nowrap'),
+    );
+  }
+
+  return $columns;
+}
+
+
+//GERMINAL ->
+function uc_product_habilitacio_table_header() {
+  $columns = array();
+
+  $columns['habilitat'] = array(
+    'weight' => 0,
+    'cell' => array('data' => t('Habilitat')),
+  );
+
+  $columns['proveidor'] = array(
+    'weight' => 1,
+    'cell' => array('data' => t('Provider'), 'style' => 'width: 100%'),
+  );
+
+  $columns['habilita'] = array(
+    'weight' => 2,
+    'cell' => array('data' => ''),
+  );
+
+  $columns['inhabilita'] = array(
+    'weight' => 3,
+    'cell' => array('data' => ''),
+  );
+
+  return $columns;
+}
+
+function uc_product_habilitacio_form_submit($form, &$form_state)
+{
+ $centre = uc_product_get_informacio_centre();
+ $values = &$form_state['values'];
+  foreach($values as $key => $value)
+  { $proveidor = str_replace('#_#', ' ', $key);
+     if ($value == t('Habilitar') )
+    {
+ 	  db_query("UPDATE uc_products SET habilitat = 1 WHERE centre=:d AND proveidor= :s", array( ':d' => $centre, ':s'=> $proveidor));
+ 	 }
+
+    if ($value == t('Inhabilitar'))
+    {
+      db_query("UPDATE uc_products SET habilitat=0 WHERE centre=:d AND proveidor=:s",array( ':d' => $centre, ':s'=> $proveidor));
+	}
+
+  }
+
+}
+
+
+function uc_product_habilitacio_form($form_state )
+{
+	 $form['items'] = array(
+    '#type' => 'tapir_table',
+    '#tree' => TRUE,
+    '#columns' => uc_product_habilitacio_table_header(),
+  );
+  $form['#attributes'] = array('width' => '100%');
+
+   $centre = uc_product_get_informacio_centre();
+
+  $proveidors = db_query("SELECT  DISTINCT u.proveidor FROM uc_products as u WHERE u.centre = :d AND u.proveidor <> '' ", array( ':d' => $centre));
+
+ $i = 0;
+  foreach ($proveidors as $proveidort )
+  {
+
+  	 $proveidor = $proveidort->proveidor;
+
+    $form['items'][$i] = array();
+  	 $form['items'][$i]['proveidor'] = array('#default_value' => $proveidor,'#type' => 'textfield','#disabled'=>TRUE );
+  //  $form['items'][$i]['proveidor']['#cell_attributes'] = array('align' => 'left');
+
+
+    $result = db_query(" SELECT count(*) as number FROM uc_products as p WHERE p.proveidor = :s AND p.centre = :d AND p.habilitat = 1",
+    array( ':s' => $proveidor ,     ':d' => $centre));
+
+    foreach (  $result as $number ){
+    $habil =$number->number;
+    }
+    $result = db_query("SELECT count(*) AS number FROM uc_products WHERE proveidor=:s AND centre=:d AND habilitat=0",    array( ':s' => $proveidor,     ':d'=> $centre));
+     foreach (  $result as $number ){
+    	$inhabil =$number->number;
+    }
+
+    // No funciona si el nom té espais
+	$proveidor = str_replace(' ','#_#',$proveidor);
+
+    if ($habil > 0 && $inhabil == 0)
+    {
+    //  $form['items'][$i]['habilitat'] = array('#value' => '<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/ok.png" />');
+      $form['items'][$i]['habilitat'] = array('#markup' => '<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/ok.png" />');
+      $form['items'][$i]['habilita']  = array('#value' => '');
+      $form['items'][$i]['inhabilita'] = array('#type' => 'submit', '#default_value' => t('Inhabilitar'), '#name' => $proveidor);
+    }
+    elseif ($habil == 0 && $inhabil > 0)
+    {
+      $form['items'][$i]['habilitat']  = array('#markup' => '<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/notok.png" />');
+      $form['items'][$i]['habilita']   = array('#type' => 'submit', '#default_value' => t('Habilitar'), '#name' => $proveidor);
+      $form['items'][$i]['inhabilita'] = array('#default_value' => '');
+    }
+    else
+    {
+      $form['items'][$i]['habilitat'] = array('#markup' => '<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/50.png" />');
+      $form['items'][$i]['habilita']  = array('#type' => 'submit', '#default_value' => t('Habilitar'), '#name' => $proveidor);
+      $form['items'][$i]['inhabilita'] = array('#type' => 'submit', '#default_value' => t('Inhabilitar'), '#name' => $proveidor);
+    }
+
+    $form[$i]['habilitat']['#cell_attributes'] = array('align' => 'center');
+    $form[$i]['habilita']['#cell_attributes'] = array('align' => 'right');
+    $form[$i]['inhabilita']['#cell_attributes'] = array('align' => 'right');
+
+   $i++;
+  }
+
+
+
+  return $form;
+
 }

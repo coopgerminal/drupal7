@@ -476,3 +476,893 @@ function uc_store_uc_store_status() {
 
   return $messages;
 }
+
+/* start Germinal functions*/
+
+function uc_store_comandes($message = NULL, $query = NULL, $count_query = NULL, $page_length = 25) {
+// mostra les comandes segons el usuari que crida la funcio
+// si no es admin, filtra per el centre del usuari
+
+  // TODO: borrar de uc_socis els usuaris borrats de drupal
+   $message = '';
+   $header = array(
+      t('Veure'),
+      array('data' => t('Centre'), 'field' => 'c.name'),
+     array('data' => t('Data'), 'field' => 'o.setmana_recollida', 'sort' => 'desc'),
+      array('data' => t('Quantes'), 'field' => 'quants'),
+    );
+  if (is_null($query)) {
+    $query = db_select('uc_orders', 'o')->extend('TableSort')->extend('PagerDefault');
+
+     if (! germinal_is_admin()) {
+      $centre_info = uc_store_get_informacio_centre_by_soci();
+      $centre_filter = intval($centre_info->uid);
+      $query->join('uc_centres','c','o.centre = c.uid AND o.centre = :centre', array(':centre' => $centre_filter )) ;
+    }else{
+      $query->join('uc_centres','c','o.centre = c.uid ') ;
+    }
+
+    $query->addExpression('COUNT(o.setmana_recollida)', 'quants');
+    $query->fields('o',array( 'setmana_recollida','centre' ));
+    $query->fields('c',array('name'));
+    $query->groupBy('setmana_recollida')->groupBy('centre');
+    $query->orderByHeader($header);
+    $query->limit(25);
+
+    $result = $query->execute();
+  }
+
+
+  $rows = array();
+   foreach($result as $comandes ) {
+    $icons = l(uc_store_get_icon('admin/store/socis', TRUE),
+               'admin/store/reports/comanda_setmanal/'. $comandes->setmana_recollida .'/'.$comandes->centre,
+               array('html' => TRUE, 'attributes' => array('title' => t("Veure informació de les comandes de la setmana i centre.")))
+             );
+    $setmana = ucfirst($comandes->setmana_recollida);
+    $centre = ucfirst($comandes->name);
+    $quants = ucfirst($comandes->quants);
+    $rows[] = array(
+   $icons ,
+  check_plain($centre),
+  check_plain($setmana),
+        $quants);
+  }
+
+  $output =  theme_table(array('header'=>$header,
+    'rows'=>$rows,
+    'attributes'=>array(),
+    'caption'=>'',
+    'colgroups'=>array(),
+    'sticky'=>'',
+    'empty'=>''));
+
+  $output .= theme('pager',array('tags' => array()));
+
+  return $output;
+}
+
+function uc_store_get_centre_name($id) {
+  if ($id == 0) {
+    return "Sense assignar";
+  }
+
+  $sql = "SELECT c.name FROM {uc_centres} c WHERE uid = $id";
+  $result = db_query($sql);
+  $name = $result->fetchAssoc();
+  return $name['name'];
+
+}
+
+function uc_store_comanda_setmanal( $query = NULL) {
+
+  $setmana = arg(4);
+  $centreid = intval(arg(5));
+  $centre  = uc_store_get_centre_name($centreid);
+  $missatge = "Informació de les comandes per la setmana " . $setmana . " del centre ".$centre."<br/>\n";
+
+  $header = array(
+    t('Veure'),
+    array('data' => t('Nom'), 'field' => 'u.name'),
+    array('data' => t('Núm. Soci'), 'field' => 's.numsoci', 'sort' => 'desc'),
+    array('data' => t('Núm Productes'), 'field' => 'numproductes'),
+    array('data' => t('Estat'), 'field' => 'o.order_status')
+  );
+  // aquesta query retorna els socis que han fet comanda una setmana en un centre i la quantitat de productes demanats,
+  // encara que no hagin demanat cap producte, això permet detectar problemes
+  /*$query =   "SELECT uc_socis.numsoci, users.name, uc_orders.order_id, COUNT(uc_order_products.order_id) AS numproductes, uc_orders.order_status" .
+        "  FROM uc_socis, users, uc_orders " .
+            " LEFT JOIN uc_order_products ON uc_orders.order_id = uc_order_products.order_id " .
+        "  WHERE uc_orders.setmana_recollida='".$setmana."' AND uc_orders.uid = uc_socis.uid AND uc_orders.uid = users.uid AND uc_orders.centre = ".$centreid." GROUP BY uc_orders.order_id ";
+
+*/
+
+  $query = db_select('uc_socis', 's');
+  $query->extend('TableSort')->orderByHeader($header);
+
+  $query->innerJoin( 'users','u',' u.uid = s.uid ');
+  $query->innerJoin( 'uc_orders','o', ' o.uid = s.uid ' );
+  $query->leftJoin( 'uc_order_products','op','o.order_id = op.order_id ');
+  $query->fields('s', array('numsoci'));
+  $query->fields('u', array('name'));
+  $query->fields('o', array('order_id','order_status'));
+  $query->addExpression('COUNT(op.order_id)', 'numproductes');
+  $query->where( "o.setmana_recollida = :setmana AND o.uid = s.uid AND o.uid = u.uid AND o.centre = :centreid" , array( ':setmana'=> $setmana , ':centreid'=> $centreid)  );
+  $query->groupBy('order_id' );
+
+  $result = $query->execute();
+    $rows = array();
+  global $base_url;
+
+  foreach ( $result as $comandasoci ) {
+
+    $icons = l(uc_store_get_icon('admin/store/orders', TRUE),
+               'admin/store/orders/'. $comandasoci->order_id,
+               array('html' => TRUE, 'attributes' => array('title' => t("View order.")))
+             );
+    $name = ucfirst($comandasoci->name);
+    $numsoci = ucfirst($comandasoci->numsoci);
+    $numproductes = ucfirst($comandasoci->numproductes);
+    $estat = ucfirst($comandasoci->order_status);
+    if (strcasecmp($estat, "pending") == 0) {
+      $estat = "<img src=\"$base_url/misc/watchdog-ok.png\" /> Ok";
+  } else if (strcasecmp($estat, "in_checkout") == 0) {
+      $estat = "<img src=\"$base_url/misc/watchdog-error.png\" /> No acabada";
+  } else if (strcasecmp($estat, "canceled") == 0) {
+      $estat = "<img src=\"$base_url/misc/watchdog-warning.png\" /> Cancel·lada";
+  }
+    $rows[] = array(
+      'data' => array(
+        array('data' => $icons),
+        array('data' => check_plain($name)),
+        array('data' => $numsoci),
+        array('data' => $numproductes),
+        array('data' => $estat)),
+    );
+  }
+
+$output =  '<p>'. $missatge .'</p>' .
+"<a href=\"$base_url/admin/store/reports/informes/".$setmana."/".$centreid."\">Generar llistats per descarregar.</a>". theme('table',
+    array('header'=> $header,
+    'rows'=>$rows,
+    'attributes'=>array(),
+    'caption'=>'',
+    'colgroups'=>array(),
+    'sticky'=>TRUE,
+    'empty'=>''))  .'<br />' ;
+
+//$output .= "<a href=\"?q=admin/store/reports/informes/".$setmana."/".intval(arg(5))."\">Generar llistats</a>";
+ //$output .= ;
+
+  return $output;
+}
+
+//TODO: poder afegir informaciço extra:
+// info del soci en el llistat del soci
+// setmana a les altres
+function convert_to_excel($centre_id, $centre, $setmana, $fulla, $array_data, $in_invert = false, $small_columns = false) {
+  $dir = drupal_get_path('module', 'uc_store');
+
+  //documentation on the spreadsheet package is at:
+  //http://pear.php.net/manual/en/package.fileformats.spreadsheet-excel-writer.php
+
+  $curr_dir = getcwd();
+  chdir($dir .'/phpxls/');
+  require_once('Writer.php');
+  chdir($curr_dir);
+
+  $export_filename = tempnam("tmp/" ,"germinal_");
+
+  $export_file = "xlsfile:/".$export_filename;
+
+  $workbook = new Spreadsheet_Excel_Writer($export_filename);
+  $workbook->setVersion(8);
+
+  $format_und =& $workbook->addFormat();
+  $format_und->setTop(1);
+  $format_und->setBottom(1);
+  $format_und->setLeft(1);
+  $format_und->setRight(1);
+  $format_und->setBold();
+  $format_und->setColor('black');
+  $format_und->setFontFamily('Arial');
+  $format_und->setSize(8);
+
+  $format_codi =& $workbook->addFormat();
+  $format_codi->setTop(1);
+  $format_codi->setBottom(1);
+  $format_codi->setLeft(1);
+  $format_codi->setRight(1);
+  $format_codi->setColor('black');
+  $format_codi->setFontFamily('Arial');
+  $format_codi->setSize(8);
+
+  $format_reg =& $workbook->addFormat();
+  $format_reg->setColor('black');
+  $format_reg->setFontFamily('Arial');
+  $format_reg->setSize(8);
+
+  foreach ($array_data as $sheet_key => $sheet_array_data) {
+    $worksheet =& $workbook->addWorksheet($sheet_key);
+
+    $worksheet->setInputEncoding('UTF-8');
+
+    $worksheet->setColumn(0,0, 20.0);//setColumn(startcol,endcol,float)
+
+    $invert = $in_invert;
+    if ($centre_id == CENTRE_SANTS) {
+      if (strcmp($fulla, "graella") == 0) {
+        if (strcmp($sheet_key, "FRUITA I VERDURA") == 0) {
+          //$worksheet->repeatColumns(0);
+        } elseif ((strcmp($sheet_key, "FLECA TASCÓ") == 0) || (strcmp($sheet_key, "LLET I DERIVATS") == 0)) {
+          $invert = false;
+        }
+      }
+    }
+
+
+    $contingut_start = 1;
+    // Si hi ha la columna de codi la fem més estreta
+    if ((count($sheet_array_data) > 0) && (isset($sheet_array_data[0]["codi"]))) {
+      $worksheet->setColumn(1,1, 6.0);
+      $contingut_start = 2;
+    }
+
+    $worksheet->write(0, 0, $centre . " / " . $setmana . " / " . $fulla . " / " . $sheet_key, $format_reg);
+
+    if ($invert) {
+      $row_start_pos = 1;
+      $col_start_pos = 2;
+    } else {
+      $row_start_pos = 3;
+      $col_start_pos = 0;
+    }
+
+    $row_pos = $row_start_pos;
+    $key_used_pos = $col_start_pos;
+    $key_mappings = array();
+    $keys = array();
+    $key_mappings["producte"] = $key_used_pos++;
+    foreach ($sheet_array_data as $row) {
+      foreach ($row as $key=>$value) {
+        if (strcmp($key, "producte") == 0) {
+        } else if (strcmp($key, "codi") == 0) {
+          if (! isset($key_mappings[$key])) {
+            $key_mappings[$key] = $key_used_pos++;
+          }
+        } else {
+          if (! in_array($key, $keys)) {
+            $keys[] = $key;
+          }
+        }
+      }
+    }
+    sort($keys);
+    foreach ($keys as $key) {
+      $key_mappings[$key] = $key_used_pos++;
+    }
+
+    foreach ($sheet_array_data as $row) {
+      foreach ($row as $key=>$value) {
+        $key_pos = $key_mappings[$key];
+
+        $fmt  =& $format_reg;
+        if ($key_pos==$col_start_pos) {
+          $fmt =& $format_und;
+        } else if (strcmp($key, "codi") == 0) {
+          $fmt =& $format_codi;
+        }
+
+        if ($invert) {
+          $worksheet->write($key_pos, $row_pos, $value, $fmt);
+        } else {
+          $worksheet->write($row_pos, $key_pos, $value, $fmt);
+        }
+
+      }
+      $row_pos++;
+    }
+
+    // Mirem quantes columnes usem pel contingut (+codi)
+    if ($invert) {
+      $used_columns = $row_pos-1;
+    } else {
+      $used_columns = $key_used_pos-1;
+    }
+
+    // Un cop sabem quantes columnes tenim els hi posem una mida
+    if ($small_columns) {
+      $worksheet->setColumn($contingut_start,$used_columns, 6.00);
+    } else {
+      $worksheet->setColumn($contingut_start,$used_columns, 12.00);
+    }
+
+    foreach ($key_mappings as $key => $key_pos) {
+      if ($invert) {
+        $worksheet->write($key_pos, 0, $key, $format_und);
+      } else {
+        $worksheet->write(2, $key_pos, $key, $format_und);
+      }
+    }
+
+    // Si és la graella de farró volen posar al final de tot el codi i el nom altre cop
+    if (($centre_id == CENTRE_FARRO) && (strcmp($fulla, "graella") == 0)) {
+      // Posem el títol de les columnes del final
+      $worksheet->setColumn($key_used_pos,$key_used_pos, 6.0);//setColumn(startcol,endcol,float)
+      $worksheet->write(2, $key_used_pos, "codi", $format_und);
+      $worksheet->setColumn($key_used_pos+1,$key_used_pos+1, 20.0);//setColumn(startcol,endcol,float)
+      $worksheet->write(2, $key_used_pos+1, "producte", $format_und);
+
+      // Tornem a recorrer les dades i posem el codi i el producte a les noves columnes
+      $row_pos = $row_start_pos;
+      foreach ($sheet_array_data as $row) {
+        $worksheet->write($row_pos, $key_used_pos, $row["codi"], $format_codi);
+        $worksheet->write($row_pos, $key_used_pos+1, $row["producte"], $format_und);
+        $row_pos++;
+      }
+    }
+  }
+
+  $workbook->close();
+
+  return $export_filename;
+}
+
+
+function uc_store_format_numeros($valor) {
+  return number_format($valor, 2, ',', '');
+}
+
+function uc_store_get_nom_separadors($centre) {
+  // Seleccionem el nom dels separadors
+  $sql =   "SELECT node.title AS nom, uc_products.ordering " .
+        "FROM node, uc_products " .
+        "WHERE node.nid = uc_products.nid AND uc_products.separador=1 AND uc_products.centre = ".$centre;
+
+  $separadors = array();
+  $result = db_query($sql);
+  foreach($result as $data ) {
+    $separadors[$data->ordering+1] = $data->nom;
+  }
+  return $separadors;
+}
+
+
+define('CENTRE_SANTS', 1);
+define('CENTRE_FARRO', 2);
+define('CENTRE_SARRIA', 4);
+// Aquesta funció agafa la suma de cada producte dels demanats per un centre i setmana
+function uc_store_informe_productes($setmana, $centre) {
+  // Seleccionem la suma de les quantitats dels productes per una setmana de recollida i un centre concret
+  $sql =   "SELECT uc_order_products.title AS producte, SUM(uc_order_products.qty) AS quantitat, uc_products.ordering, uc_products.codi " .
+        "FROM uc_orders, uc_order_products, uc_products " .
+        "WHERE uc_order_products.nid = uc_products.nid AND uc_orders.setmana_recollida='".$setmana."' AND uc_orders.order_id = uc_order_products.order_id AND uc_orders.centre = $centre AND uc_orders.order_status LIKE 'pending'".
+        "GROUP BY uc_order_products.nid ".
+        "ORDER BY uc_products.ordering ASC, uc_order_products.title ASC";
+
+  // La capçalera de la taula només conté el producte i la quantitat
+  $xsl = array();
+
+  // Per cada producte posem el nom i la quantitat
+    $result = db_query($sql);
+    foreach ($result as $data ) {
+    if (! isset($xsl[$data->ordering])) {
+      $xsl[$data->ordering] = array();
+    }
+  $xsl_order = $xsl[$data->ordering];
+   if ($centre == CENTRE_SANTS) {
+      $xsl_order[] = array("producte" => $data->producte, "codi" => $data->codi, "1. q. demanada" => $data->quantitat, "2. q. arribada" => "" , "3. qualitat" => "");
+    } else {
+      $xsl_order[] = array("producte" => $data->producte, "codi" => $data->codi, "quantitat" => $data->quantitat);
+    }
+    $xsl[$data->ordering] = $xsl_order;
+
+    }
+
+  // Canviem les claus de l'array del xsl de la posicio al nom del separador
+  $separadors = uc_store_get_nom_separadors($centre);
+  foreach ($separadors as $pos => $separador) {
+    if (isset($xsl[$pos])) {
+      $xsl[$separador] = $xsl[$pos];
+      unset($xsl[$pos]);
+    }
+  }
+
+  return $xsl;
+}
+
+
+
+// Aquesta funció agafa la graella de productes/soci per a preparar la comanda
+function uc_store_informe_productes_soci($setmana, $centre) {
+  // Seleccionem per cada soci d'un centre els productes demanats per una setmana de recollida
+  // el resultat és redundant, però així fem només una consulta
+  $sql =   "SELECT uc_socis.numsoci, users.name, uc_orders.order_id, uc_order_products.title, uc_order_products.qty, uc_products.codi, uc_products.ordering " .
+      "FROM uc_socis, users, uc_orders, uc_order_products, uc_products " .
+      "WHERE uc_orders.setmana_recollida='$setmana' AND uc_orders.uid = uc_socis.uid AND uc_orders.uid = users.uid AND uc_orders.order_id = uc_order_products.order_id AND uc_orders.centre = $centre AND uc_products.nid = uc_order_products.nid AND uc_orders.order_status LIKE 'pending' ".
+      "ORDER BY uc_products.ordering ASC, uc_order_products.title ASC";
+
+  // El primer que fem es recorrer el resultat i crear un llistat de productes i per cada soci els productes que ha demanat
+  $socis = array();
+  $productes = array();
+  $soci = array();
+  $result = db_query($sql);
+  foreach ($result as $data ) {
+    $numsoci = $data->numsoci;
+    $nomsoci = $data->name;
+    $nomproducte = $data->title;
+    $codiproducte = $data->codi;
+      $quantproducte = $data->qty;
+      $ordering = $data->ordering;
+
+      if (!isset($productes[$ordering])) {
+        $productes[$ordering] = array();
+    }
+    $productes_ordering = $productes[$ordering];
+      $productes_ordering[$codiproducte] = $nomproducte;
+       $productes[$ordering] = $productes_ordering;
+
+
+    if (!in_array( $numsoci , $socis)) {
+        $soci = array();
+        $soci['nom'] = $nomsoci;
+        $soci['num'] = $numsoci;
+    }
+    $soci[$codiproducte] = $quantproducte;
+    $socis[$numsoci] = $soci;
+    }
+
+  ksort($socis);
+
+  $xls = array();
+
+  foreach ($productes as $ordering => $productes_ordering) {
+    $xls_ordering = array();
+    foreach ($productes_ordering as $codiproducte => $nomproducte) {
+      $xls_array = array();
+      if (($centre == CENTRE_FARRO) || ($centre == CENTRE_SARRIA)) {
+        $xls_array["producte"] = $nomproducte;
+        $xls_array["codi"] = $codiproducte;
+      } else {
+        $xls_array["producte"] = $nomproducte." (".$codiproducte.")";
+      }
+      foreach ($socis as $idsoci => $soci) {
+        if (isset($soci[$codiproducte])) {
+          if (($centre == CENTRE_FARRO) || ($centre == CENTRE_SARRIA)) {
+            $xls_array[$soci['num']] = $soci[$codiproducte];
+          } else {
+            $fnum = sprintf("%03d",$soci['num']);
+            $xls_array[$fnum." - ".$soci['nom']] = $soci[$codiproducte];
+          }
+        }
+      }
+      $xls_ordering[] = $xls_array;
+    }
+    $xls[$ordering] = $xls_ordering;
+  }
+
+  // Canviem les claus de l'array del xsl de la posicio al nom del separador
+  $separadors = uc_store_get_nom_separadors($centre);
+  foreach ($separadors as $pos => $separador) {
+    if (isset($xls[$pos])) {
+      $xls[$separador] = $xls[$pos];
+      unset($xls[$pos]);
+    }
+  }
+
+    return  $xls;
+}
+
+
+// Aquesta funció agafa la llista de productes demanats per cada soci
+function uc_store_informe_socis($setmana, $centre) {
+  // Seleccionem per cada soci d'un centre els productes demanats per una setmana de recollida
+  // el resultat és redundant, però així fem només una consulta
+  $sql =   "SELECT uc_socis.numsoci, users.name, uc_orders.order_id, uc_order_products.title, uc_order_products.qty, uc_products.codi, uc_products.ordering " .
+      "FROM uc_socis, users, uc_orders, uc_order_products, uc_products " .
+      "WHERE uc_orders.setmana_recollida='$setmana' AND uc_orders.uid = uc_socis.uid AND uc_orders.uid = users.uid AND uc_orders.order_id = uc_order_products.order_id AND uc_orders.centre = $centre AND uc_products.nid = uc_order_products.nid AND uc_orders.order_status LIKE 'pending' ".
+      "ORDER BY uc_socis.numsoci ASC, uc_products.ordering ASC, uc_order_products.title ASC";
+
+  // El primer que fem es recorrer el resultat i crear un llistat de productes i per cada soci els productes que ha demanat
+  $socis = array();
+  $productes = array();
+
+    $result = db_query($sql);
+    foreach ($result as $data ) {
+      $numsoci = $data->numsoci;
+      $nomsoci = $data->name;
+      $nomproducte = $data->title;
+    $codiproducte = $data->codi;
+      $quantproducte = $data->qty;
+      $ordering = $data->ordering;
+
+      if (!isset($productes[$ordering])) {
+        $productes[$ordering] = array();
+    }
+    $productes_ordering = $productes[$ordering];
+      $productes_ordering[$codiproducte] = $nomproducte;
+       $productes[$ordering] = $productes_ordering;
+
+
+      if (!in_array($numsoci."-".$nomsoci,$socis) ) {
+        $soci = array();
+        $soci['nom'] = $nomsoci;
+        $soci['num'] = $numsoci;
+    }
+    $soci[$codiproducte] = $quantproducte;
+    $socis[$numsoci."-".$nomsoci] = $soci;
+    }
+
+
+  $separadors = uc_store_get_nom_separadors($centre);
+
+  $xls = array();
+  foreach ($socis as $idsoci => $soci) {
+    $xls_soci = array();
+    foreach ($productes as $ordering => $productes_ordering) {
+      $xls_soci_ordering = array();
+      foreach ($productes_ordering as $codiproducte => $nomproducte) {
+        $xls_array = array();
+        $xls_array["producte"] = $nomproducte." (".$codiproducte.")";
+        $xls_ordering[] = $xls_array;
+
+        if (isset($soci[$codiproducte])) {
+          $productesoci = $soci[$codiproducte];
+          if ($centre == CENTRE_SANTS) { // a sants afegim un espai davant dels codis de producte que comencen per 0, sinó se'l menja
+            if ((is_string($codiproducte)) && (substr($codiproducte, 0 ,1) == "0")) {
+              $scodiproducte = " " . $codiproducte;
+            } else {
+              $scodiproducte = $codiproducte;
+            }
+            $xls_soci_ordering[] = array("producte" => $nomproducte, "codi" => $scodiproducte, "quantitat" => $productesoci);
+          } else {
+            $xls_soci_ordering[] = array("producte" => $nomproducte, "codi" => $codiproducte, "quantitat" => $productesoci);
+          }
+        }
+      }
+      if (count($xls_soci_ordering) > 0) {
+        $xls_soci[] = array("producte" => $separadors[$ordering], "codi" => "", "quantitat" => "");
+        foreach ($xls_soci_ordering as $value) {
+          $xls_soci[] = $value;
+        }
+      }
+    }
+
+    if ($centre == CENTRE_SANTS) {
+      $fnum = sprintf("%03d",$soci['num']);
+      $xls[$fnum." - ".$soci['nom']] = $xls_soci;
+    } else {
+      $xls[$soci['num']] = $xls_soci;
+    }
+  }
+
+  return $xls;
+}
+
+function uc_store_socis($message = NULL, $query = NULL, $count_query = NULL, $page_length = 25) {
+  $output = "";
+
+  $centres = uc_store_get_centres();
+  foreach ($centres as $centre_id => $centre_name) {
+    $output .= '<a href="'.base_path().'admin/store/customers/socis/'.$centre_id.'">'.$centre_name.'</a><br/>';
+  }
+
+  return $output;
+}
+
+function uc_store_socis_centre($message = NULL, $query = NULL, $count_query = NULL, $page_length = 25) {
+
+  $args = func_get_args();
+  $arg_centre = $args[0];
+
+  // Insertem a la taula uc_socis els usuaris donats d'alta a drupal
+
+  $subquery = db_select('users','u')
+      -> fields(  'u', array('uid') )
+      -> where ( ' u.uid NOT IN (SELECT uc_socis.uid FROM uc_socis) ');
+  $num = $subquery->execute()->rowCount();;
+ if($num > 0 ){
+// posiblemet aixo esta malament... (ull query local)
+    $subquery = db_select('users','u')
+    -> fields(  'u', array('uid') )
+    -> where ( ' u.uid NOT IN (SELECT uc_socis.uid FROM uc_socis) ');
+  $lquery = db_insert( 'uc_socis') -> fields( array( 'uid'=>  $subquery, 'centre'=> 0, 'numsoci' => 1 ));
+  $queryl->execute();
+  }
+ // Borrem de la taula uc_socis els usuaris donats de baixa a drupal
+  db_delete( 'uc_socis') -> where ("uc_socis.uid NOT IN (SELECT users.uid FROM users)")->execute();
+ $header = array(
+    t('Veure'),
+    array('data' => t('Nom'), 'field' => 'u.name', 'sort' => 'asc'),
+    array('data' => t('E-mail'), 'field' => 'u.mail'),
+    array('data' => t('Centre'), 'field' => 'c_name'),
+    array('data' => t('Núm. Soci'), 'field' => 's.numsoci'),
+  );
+
+  if (is_null($query)) {
+   if ($arg_centre != 0) {
+    //  $query = "SELECT u.uid, u.mail, u.name, s.numsoci, c.name AS namecentre, c.uid AS uidcentre "
+      //    ."FROM {uc_centres} AS c, {users} AS u, {uc_socis} AS s "
+        //  ."WHERE u.uid > 0 AND u.uid = s.uid AND c.uid = s.centre AND c.uid = ".$arg_centre;
+        $query = db_select('uc_socis','s');
+          $query->extend('TableSort')->orderByHeader($header);
+      $query->join('users','u','u.uid = s.uid');
+      $query->join('uc_centres','c','s.centre = c.uid');
+      $query->fields('u',array('uid','mail','name'));
+      $query->fields('s',array('numsoci'));
+      $query->fields('c',array( 'name', 'uid'));
+      $query->where ( "u.uid > 0 AND u.uid = s.uid AND c.uid = s.centre AND c.uid = :arg_centre",array(':arg_centre'=> $arg_centre));
+    } else {
+      //$query = "SELECT u.uid, u.mail, u.name "
+        //  ."FROM {users} AS u, {uc_socis} AS s "
+          //."WHERE u.uid > 0 AND u.uid = s.uid AND s.centre = 0";
+
+  $query = db_select( 'users', 'u' );
+        $query->extend('TableSort')->orderByHeader($header);
+        $query->join('uc_socis','s');
+  $query->fields('u',array('uid','mail','name'));
+  $query->where(" u.uid > 0 AND u.uid = s.uid AND s.centre = 0 ");
+    }
+
+    $arg_centre_name = uc_store_get_centre_name($arg_centre);
+    $message = t("Socis del centre: " . $arg_centre_name);
+  }
+
+
+
+  $rows = array();
+  $result = $query->execute();
+
+  foreach ($result as $customer ) {
+
+    $icons = l(uc_store_get_icon('admin/store/customers', TRUE),
+               'user/'. $customer->uid,
+               array('html' => TRUE, 'attributes' => array('title' => t('View user details.')))
+             )
+           . l(uc_store_get_icon('admin/store/orders', TRUE),
+               'admin/store/customers/orders/'. $customer->uid,
+               array('html' => TRUE, 'attributes' => array('title' => t("View customer's order.")))
+             )
+           . l(uc_store_get_icon('admin/store/socis', TRUE),
+               'admin/store/customers/soci/'. $customer->uid,
+               array('html' => TRUE, 'attributes' => array('title' => t("Veure informació del soci.")))
+             );
+    $name = ucfirst($customer->name);
+    $mail = ucfirst($customer->mail);
+    if ($arg_centre != 0) {
+      $centre =  ucfirst($customer->c_name);
+      $numsoci = ucfirst($customer->numsoci);
+  } else {
+      $centre = "";
+      $numsoci = "";
+  }
+    $rows[] = array(
+      'data' => array(
+        array('data' => $icons),
+        array('data' => check_plain($name)),
+        array('data' => check_plain($mail)),
+        array('data' => check_plain($centre)),
+        array('data' => $numsoci)),
+      'id' => 'customer-'. $customer->uid,
+    );
+
+  }
+
+
+
+
+$output =    theme('table',
+    array('header'=> $header,
+    'rows'=>$rows,
+    'attributes'=>array(),
+    'caption'=>'',
+    'colgroups'=>array(),
+    'sticky'=>TRUE,
+    'empty'=>'')) ;
+
+  return $output;
+
+
+}
+
+// Indica si l'usuari actual és administrador (de la web, no de la botiga)
+function germinal_is_admin() {
+  global $user;
+  if (in_array('administrador', array_values($user->roles))) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/*
+* Funció que retorna la llista de centres existents (+ "sense assignar")
+*   - si $filtrar és cert només hi deixem el centre del soci i "sense assignar"
+*     - excepte si és administrador de la web
+*/
+function uc_store_get_centres($filtrar = false) {
+  $result = db_query("SELECT c.uid, c.name FROM uc_centres as c");
+
+  $centres = array();
+
+  if ((! $filtrar) || (germinal_is_admin())) {
+    foreach ( $result as $row) {
+      $centres[$row->uid] = $row->name;
+    }
+  } else {
+    $centre_info = uc_cart_get_informacio_centre();
+    $centres[$centre_info->uid] = $centre_info->name;
+  }
+
+  $centres[0] = "Sense assignar";
+  return $centres;
+}
+
+
+function uc_store_get_rol_centre($centre) {
+  $result = db_query("SELECT rid FROM role WHERE name=(SELECT rol FROM uc_centres WHERE uid= :centre )" ,array(  ':centre' => $centre ));
+  foreach($result as $row){
+    return $row->rid;
+  }
+}
+
+
+function uc_store_get_informacio_soci($soci_uid) {
+      $query = db_select('uc_socis' , 's');
+      $query->join('users', 'u', 's.uid = u.uid AND s.uid = :soci_id', array(':soci_id'=>$soci_uid));
+      $query->fields('s');
+      $query->fields('u',array('name','mail'));
+      $result = $query->execute();
+      foreach($result as $soci){
+  return $soci;
+      }
+    drupal_set_message(t('El soci amb uid '.$soci_uid.' no existeix.'), 'error');
+}
+
+function uc_store_assignar_soci_form($form, &$form_state , $numsoci, $centre) {
+
+  $form['numsoci'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Número de soci'),
+    '#default_value' => $numsoci,
+  '#weight' => -10,
+  '#required' => TRUE,
+  );
+
+  $form['centre'] = array(
+    '#type' => 'select',
+    '#title' => t('Centre d\'activitat'),
+    '#default_value' => $centre,
+  '#required' => TRUE,
+  '#weight' => 0,
+    '#options' => uc_store_get_centres(true),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Assigna',
+  '#weight' => 10,
+  );
+
+  return $form;
+}
+
+
+
+function uc_store_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'uc_store_assignar_soci_form')
+  {
+    $soci = arg(4);
+    $infosoci = uc_store_get_informacio_soci($soci);
+    $form['numsoci']['#value'] =  $infosoci->numsoci;
+    $form['centre']['#value'] = $infosoci->centre ;
+  }
+}
+
+function uc_store_assignar_soci() {
+  $args = func_get_args();
+  $soci = arg(4);
+  $soci_info = uc_store_get_informacio_soci($soci);
+
+  $output = "Informació del soci ".$soci_info->name." (".$soci_info->mail.")<br/>";
+  $output .= drupal_render(drupal_get_form('uc_store_assignar_soci_form', $soci_info->numsoci, $soci_info->centre));
+  return $output;
+}
+
+function uc_store_assignar_soci_form_validate($form, &$form_state) {
+    $a = 9;
+}
+
+// We add a submit handler/function to our form.
+
+function uc_store_assignar_soci_form_submit($form, &$form_state) {
+  $soci = arg(4);
+  //GERMINAL->
+  // Si ja tenia un rol de germinalet l'esborro
+  $query = db_delete( 'users_roles' )-> where("  uid = :soci  AND rid IN ( select rid from role where name like 'germinal_%' )", array(':soci'=>$soci));
+  $query->execute();
+
+  // Afegeixo el nou
+  if ($_POST['centre']!='0')
+  {
+   $query = db_insert( 'users_roles')->fields( array('uid' => $soci ,'rid' => uc_store_get_rol_centre($_POST['centre']) ));
+   $query->execute();
+  }
+    $query = db_update( 'uc_socis') -> fields(array('centre' => $_POST['centre'] , 'numsoci' => $_POST['numsoci'] ))
+                         ->where( 'uid = :soci', array( ':soci'=> $soci));
+    $query->execute();
+    drupal_set_message(t('The form has been submitted.'));
+}
+
+
+
+function uc_store_get_informacio_centre_by_soci() {
+
+  global $user;
+  $query = db_select('uc_socis' , 'u');
+  $query->condition( 'u.uid' , $user->uid , '=' );
+  $query->fields('u');
+  $soci = $query->fetchAll();
+
+  $query = db_select( 'uc_centres' , 'u');
+  $query->condition( 'u.uid', $soci->centre , '=' );
+  $query->fields('u','*');
+  $centre = $query->fetchAll();;
+  return $centre;
+}
+
+
+
+function uc_store_informes() {
+  $args = func_get_args();
+  $setmana = arg(4);
+  $centre_id = intval(arg(5));
+  $centre = uc_store_get_centre_name($centre_id);
+
+  $productes = uc_store_informe_productes($setmana, $centre_id);
+  $productes_xls_filename = convert_to_excel($centre_id, $centre, $setmana, "totals", $productes);
+
+
+  $productes_soci = uc_store_informe_productes_soci($setmana, $centre_id);
+  if (($centre_id != CENTRE_FARRO) && ($centre_id != CENTRE_SARRIA)) {
+    $productes_soci_xls_filename = convert_to_excel($centre_id, $centre, $setmana, "graella", $productes_soci, true, false); // invertim files i columnes
+  } else {
+    $productes_soci_xls_filename = convert_to_excel($centre_id, $centre, $setmana, "graella", $productes_soci, false, true); // no invertim files i columnes i fem les columnes petites
+  }
+
+  $socis = uc_store_informe_socis($setmana, $centre_id);
+  $socis_xls_filename = convert_to_excel($centre_id, $centre, $setmana, "socis", $socis);
+
+  // Creem el fitxer zip amb tota la informacio
+  $folder = $_SERVER["DOCUMENT_ROOT"].base_path();
+  $subfolder =  "sites/default/files/TMP/";
+
+  $file = str_replace(' ', '',  $setmana."_".$centre.".zip" );
+  $zip = new ZipArchive();
+  $filename = $folder.$subfolder.$file;
+  // que passa si el fitxer ja existeix??!!
+  if ($zip->open($filename, ZIPARCHIVE::CREATE  )!==TRUE) {
+      exit("cannot open <$filename>\n");
+  }
+
+  $socis_files = array();
+  $res=$zip->addFile($productes_xls_filename, $setmana."_productes.xls");
+  $res=$zip->addFile($productes_soci_xls_filename, $setmana."_productes_soci.xls");
+  $res=$zip->addFile($socis_xls_filename, $setmana."_socis.xls");
+// if it does not save, check if target folder has rwx premissions
+  $res=$zip->close();
+
+  // borrem els fitxers temporals
+  unlink($productes_xls_filename);
+  unlink($productes_soci_xls_filename);
+  unlink($socis_xls_filename);
+
+  global $base_url;
+  $output = "<br/><br/>Fitxer creat correctament <a href=\"".$base_url."/".$subfolder.$file."\">aqui</a><br/>\n";
+
+  return $output;
+
+}
+
+/* end Germinal functions*/
+

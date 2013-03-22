@@ -510,6 +510,8 @@ function theme_uc_cart_review_table($variables) {
           $description .= $display_item['description']['#markup'];
         }
         $qty = $display_item['qty']['#default_value'];
+       // germinal: mostra nomes els positius
+        if( $qty > 0 ){
         $suffix = !empty($display_item['#suffixes']) ? implode(' ', $display_item['#suffixes']) : '';
 
         $rows[] = array(
@@ -517,6 +519,7 @@ function theme_uc_cart_review_table($variables) {
           array('data' => $description, 'class' => array('products')),
           array('data' => array('#theme' => 'uc_price', '#price' => $total, '#suffix' => $suffix), 'class' => array('price')),
         );
+	}
       }
     }
   }

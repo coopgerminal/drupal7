@@ -766,7 +766,7 @@ function _theme_build_registry($theme, $base_theme, $theme_engine) {
  *     their base theme), direct sub-themes of sub-themes, etc. The keys are
  *     the themes' machine names, and the values are the themes' human-readable
  *     names. This element is not set if there are no themes on the system that
- *     declare this theme as their base theme. 
+ *     declare this theme as their base theme.
 */
 function list_themes($refresh = FALSE) {
   $list = &drupal_static(__FUNCTION__, array());
