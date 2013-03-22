@@ -54,6 +54,9 @@ class UcOrder {
   public $created = 0;
   public $modified = 0;
   public $currency = '';
+  //germinal
+  public $setmana_recollida = '';
+  public $centre = '';
 
   /**
    * Order object constructor.
@@ -283,7 +286,16 @@ function uc_order_menu() {
     'access arguments' => array(3),
     'file' => 'uc_order.admin.inc',
   );
-
+//GERMINAL ->
+  $items['comandes_anteriors'] = array(
+    'title' => 'Comandes anteriors',
+    'description' => 'Comandes sol&#183;licitades amb anterioritat.',
+    'page callback' => 'uc_order_comandes_anteriors',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_order.admin.inc',
+  );
+  //GERMINAL <-
   return $items;
 }
 
@@ -375,6 +387,12 @@ function uc_order_theme($existing, $type, $theme, $path) {
       'render element' => 'form',
       'file' => 'uc_order.order_pane.inc',
     ),
+ //GERMINAL ->
+   'uc_order_comandes_anteriors_form' => array(
+      'render element' => 'form',
+      'variables' => array('form' => NULL),
+    ),
+    //GERMINAL <-
   );
 
   $theme_hooks += array(
@@ -845,9 +863,11 @@ function uc_order_order_entity_access($op, $order = NULL, $account = NULL) {
  */
 function uc_order_new($uid = 0, $state = 'in_checkout') {
   $order = new UcOrder($uid, $state);
-
+  //germinal
+  if(!isset($_SESSION['dia_recollida']))$_SESSION['dia_recollida']= uc_germinal_avui()+($form_state['values']['data']*7*24*60*60);
+  $order->setmana_recollida = gmdate( 'Y-m-d',$_SESSION['dia_recollida'] );
+  $order->centre = uc_order_get_informacio_soci()->centre;
   drupal_write_record('uc_orders', $order);
-
   uc_order_module_invoke('new', $order, NULL);
 
   return $order;
@@ -1177,6 +1197,7 @@ function uc_order_load($order_id, $reset = FALSE) {
   $orders = uc_order_load_multiple(array($order_id), array(), $reset);
 
   return $orders ? reset($orders) : FALSE;
+
 }
 
 /**
@@ -2280,3 +2301,156 @@ function uc_order_action_print($orders, $context = array()) {
   print '</body></html>';
   exit;
 }
+
+
+function uc_order_get_informacio_soci() {
+  global $user;
+
+  $result = db_query("SELECT * FROM {uc_socis} s WHERE s.uid = " . $user->uid);
+  foreach($result as $soci){
+  return $soci;
+  }
+}
+
+
+//GERMINAL ->
+function uc_order_comandes_anteriors_form($form,&$form_state) {
+  global $user;
+   if (isset($form_state['input'])) {
+	foreach ($form_state['input'] as $clau => $valor) {
+	  if ($valor == t('Edit') || $valor == t('Nova comanda') || $valor == t('Cancel')) {
+	    $comanda = uc_order_load($clau);
+
+	    if ($valor != t('Cancel'))
+          $_SESSION['comanda'] = $comanda;
+
+        $data = explode('-', $comanda->setmana_recollida);
+        $setmana = mktime(0, 0, 0, $data[1], $data[2], $data[0]);
+      }
+
+	  if ($valor == t('Edit')) {
+        $_SESSION['dia_recollida'] = $setmana;
+        drupal_goto('cart');
+	  }
+
+	  if ($valor == t('Nova comanda')) {
+        $_SESSION['dia_recollida'] = $setmana;
+	$_SESSION['from_comandes_anteriors'] = TRUE;
+        drupal_goto('data_recollida');
+	  }
+
+	  if ($valor == t('Cancel')) {
+	    $nom_setmana = module_invoke('uc_cart', 'nom_setmana', $setmana);
+	    $params = array('nom_setmana' => $nom_setmana);
+	    drupal_mail('uc_order', 'comanda-cancelada', $user->mail, user_preferred_language($user), $params);
+	    drupal_set_message(t('La comanda de la setmana %setmana ha estat anul&#183;lada.', array('%setmana' => $nom_setmana)));
+	    drupal_set_message(t('En rebreu confirmaci&oacute; per correu electr&ograve;nic.'));
+	    uc_order_delete($clau);
+	  }
+	}
+  }
+
+  $form['items'] = array(
+    '#type' => 'tapir_table',
+    '#tree' => TRUE,
+  );
+
+  $items = uc_order_loadlast(10);
+
+  $i = 0;
+  foreach ($items as $item) {
+    $display_item = uc_order_display($item);
+    if (!empty($display_item)) {
+      $form['items'][$i] = $display_item;
+      $i++;
+    }
+  }
+
+  $form['items'] = uc_order_comandes_anteriors_table($form['items']);
+  return $form;
+}
+
+function uc_order_display($order) {
+  $data = explode('-', $order->setmana_recollida);
+  $dia = mktime(0, 0, 0, $data[1], $data[2], $data[0]);
+
+  $element = array();
+  $element['setmana_recollida'] = array('#markup' => module_invoke('uc_cart', 'nom_setmana', $dia) );
+  $element['total'] = array('#markup' => number_format($order->order_total, 2) . '&#128;');
+  $element['total']['#cell_attributes'] = array('align' => 'center');
+
+  // Es pot editar i cancel�lar si no hem arribat a la data l�mit
+  if (module_invoke('uc_cart', 'comprova_data_limit', module_invoke('uc_cart', 'get_informacio_centre'), $dia)) {
+    $element['editar'] = array('#type' => 'submit', '#value' => t('Edit'), '#name' => $order->order_id);
+    $element['editar']['#cell_attributes'] = array('align' => 'center');
+    $element['cancel'] = array('#type' => 'submit', '#value' => t('Cancel'), '#name' => $order->order_id);
+    $element['cancel']['#cell_attributes'] = array('align' => 'center');
+  }
+  else {
+    $element['editar'] = array('#value' => '');
+    $element['cancel'] = array('#value' => '');
+  }
+  $element['nova'] = array('#type' => 'submit', '#value' => t('Nova comanda'), '#name' => $order->order_id);
+  $element['nova']['#cell_attributes'] = array('align' => 'center');
+  return $element;
+}
+
+/*function theme_uc_order_comandes_anteriors_form($form) {
+  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = '<div id="cart-form-data">';
+  $output.= drupal_render_children($form);
+  $output.= '</div>';
+  return $output;
+}
+*/
+function uc_order_comandes_anteriors_table($table) {
+  $table['#attributes'] = array('width' => '100%');
+
+  $table['#columns'] = array(
+    'setmana_recollida' => array(
+      'cell' => t('Setmana de recollida'),
+      'weight' => 1,
+    ),
+    'total' => array(
+      'cell' => t('Preu total'),
+      'weight' => 3,
+    ),
+    'editar' => array(
+      'cell' => t(''),
+      'weight' => 4,
+    ),
+    'cancel' => array(
+      'cell' => t(''),
+      'weight' => 5,
+    ),
+    'nova' => array(
+      'cell' => t(''),
+      'weight' => 6,
+    ),
+  );
+
+  foreach (element_children($table) as $i) {
+    $table[$i]['#attributes'] = array('valign' => 'top');
+  }
+  return $table;
+}
+
+
+
+function uc_order_load_cancelacio($params) {
+  $file = drupal_get_path('module', 'uc_order') .'/templates/cancel.itpl.php';
+  if (file_exists($file)) {
+    $business_header = TRUE;
+    $nom_setmana = $params['nom_setmana'];
+    ob_start();
+    require($file);
+    $output = ob_get_contents();
+    ob_end_clean();
+  }
+
+  $output = token_replace($output, 'global');
+
+  return $output;
+}
+//GERMINAL <-

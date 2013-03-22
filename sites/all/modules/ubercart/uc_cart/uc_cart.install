@@ -14,7 +14,9 @@ function uc_cart_schema() {
   $schema['uc_cart_products'] = array(
     'description' => 'Stores products placed in shopping carts.',
     'fields' => array(
-      'cart_item_id' => array(
+    //germinal run  to add new field alter table uc_cart_products add column cart_item_id INT auto_increment  not null PRIMARY KEY;
+    // shouldn't be problematic since table is empty
+        'cart_item_id' => array(
         'description' => 'Unique identifier for cart item.',
         'type' => 'serial',
         'unsigned' => TRUE,
@@ -36,7 +38,7 @@ function uc_cart_schema() {
       ),
       'qty' => array(
         'description' => 'The number of this product in the cart.',
-        'type' => 'int',
+        'type' => 'decimal',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,

@@ -21,9 +21,7 @@ function uc_cart_view() {
   }
 
   //GERMINAL ->
-  if (!isset($_SESSION['dia_recollida']) || uc_referer_check(array('data_recollida','cart')==FALSE)) {
-    drupal_goto('data_recollida');
-  }
+
 
   if (strstr(uc_referer_uri(),'cart')==FALSE) {
     uc_cart_empty(uc_cart_get_id());

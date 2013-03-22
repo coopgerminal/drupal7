@@ -126,6 +126,98 @@ function uc_store_schema() {
     ),
   );
 
+/*start Germinal*/
+  /*
+		CREATE TABLE {uc_centres} (
+			`uid` INT( 10 ) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+			`name` VARCHAR( 60 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+			`dia_limit` INT( 10 ) UNSIGNED NOT NULL ,
+			`hora_limit` INT( 10 ) UNSIGNED NOT NULL ,
+			`rol` VARCHAR( 60 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+			UNIQUE (
+				`name`
+			)
+		) ENGINE = MYISAM
+  */
+  $schema['uc_centres'] = array(
+    'description' => 'Guarda informació sobre els centres d\'activitat.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Clau Primària: identificador únic.',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Nom del centre d\'activitat.',
+      ),
+      'dia_limit' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Dia límit per fer la comanta de la setmana vinent.',
+      ),
+      'hora_limit' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Hora límit dins el dia límit.',
+      ),
+      'rol' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Rol associat al centre d\'activitat.',
+      ),
+    ),
+    'unique keys' => array(
+      'name' => array('name'),
+    ),
+    'primary key' => array('uid'),
+  );
+
+  /*
+		CREATE TABLE {uc_socis} (
+			uid INT( 10 ) UNSIGNED NOT NULL PRIMARY KEY ,
+			centre INT UNSIGNED NOT NULL DEFAULT '1' ,
+			numsoci INT UNSIGNED NOT NULL
+		)
+
+  */
+  $schema['uc_socis'] = array(
+    'description' => 'Guarda informació sobre els socis.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Clau Primària: identificador del soci a la taula users.',
+      ),
+      'centre' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+        'description' => 'Id del centre al que pertany el soci.',
+      ),
+      'numsoci' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Número de soci del soci al centre.',
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+
+
+
+/*end Germinal*/
   return $schema;
 }
 

@@ -1919,10 +1919,11 @@ function uc_order_loadlast($limit) {
   $_SESSION['centre_activitat'] = module_invoke('uc_cart', 'get_informacio_centre');
   $_SESSION['soci'] = module_invoke('uc_cart', 'get_informacio_soci');
 
-  $result = db_query("SELECT order_id FROM {uc_orders} WHERE uid = %d AND centre = %d AND order_status='pending' ORDER BY setmana_recollida DESC limit %d", $_SESSION['soci']->uid, $_SESSION['centre_activitat']->uid, $limit);
+  $result = db_query_range("SELECT order_id FROM {uc_orders} WHERE uid = '. $_SESSION['soci']->uid  .' AND centre = '.$_SESSION['centre_activitat']->uid.' AND order_status='pending' 
+        ORDER BY setmana_recollida DESC ",0  , $limit);
 
   $items = array();
-  while ($order = db_fetch_object($result)) {
+  foreach($result as $order ) {
     $items[] = uc_order_load($order->order_id);
   }
 
