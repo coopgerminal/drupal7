@@ -23,10 +23,28 @@ function uc_cart_view() {
 
   // Display the empty cart page if there are no items in the cart.
   if (empty($items)) {
-    return array(
-      '#theme' => 'uc_empty_cart',
-    );
+   //GERMINAL ->
+	uc_germinal_omple_graella();
+	$items = uc_cart_get_contents(NULL,'rebuild');
+	//GERMINAL <-
+    //return theme('uc_empty_cart');
   }
+
+ //GERMINAL ->
+  // Edició de comandes anteriors
+
+  if (isset($_SESSION['comanda'])) {
+    foreach($_SESSION['comanda']->products as $producte) {
+      foreach ($items as $item) {
+        if ($producte->nid==$item->nid) {
+          $item->qty = $producte->qty;
+          module_invoke($item->module, 'update_cart_item', $item->nid, $item->data, $item->qty);
+        }
+      }
+    }
+    unset($_SESSION['comanda']);
+  }
+  //GERMINAL <-
 
   $build = array();
   // Load through the cart panes...
@@ -46,6 +64,23 @@ function uc_cart_view() {
 
   return $build;
 }
+
+
+//GERMINAL ->
+function uc_cart_data_recollida() {
+  uc_cart_empty(uc_cart_get_id());
+  $output = drupal_get_form('uc_cart_data_recollida_form');
+  return $output;
+}
+//GERMINAL <-
+
+//GERMINAL ->
+function uc_torna_a_cart($form, &$form_state) {
+  cache_clear_all();
+  unset($_SESSION['do_review']);
+  $form_state['redirect'] = 'cart';
+}
+//GERMINAL <-
 
 /**
  * Confirm that the customer wants to empty their cart.
@@ -102,33 +137,38 @@ function uc_cart_checkout() {
   // Load an order from the session, if available.
   if (isset($_SESSION['cart_order'])) {
     $order = uc_order_load($_SESSION['cart_order']);
+
     if ($order) {
+
       // Don't use an existing order if it has changed status or owner, or if
       // there has been no activity for 10 minutes (to prevent identity theft).
       if (uc_order_status_data($order->order_status, 'state') != 'in_checkout' ||
-          ($user->uid > 0 && $user->uid != $order->uid) ||
+         ($user->uid > 0 && $user->uid != $order->uid) ||
           $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT) {
         if (uc_order_status_data($order->order_status, 'state') == 'in_checkout' && $order->modified < REQUEST_TIME - UC_CART_ORDER_TIMEOUT) {
           // Mark expired orders as abandoned.
           uc_order_update_status($order->order_id, 'abandoned');
         }
+
         unset($order);
       }
     }
     else {
       // Ghost session.
       unset($_SESSION['cart_order']);
+
       drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
       drupal_goto('cart');
     }
   }
 
+
   // Determine whether the form is being submitted or built for the first time.
   if (isset($_POST['form_id']) && $_POST['form_id'] == 'uc_cart_checkout_form') {
     // If this is a form submission, make sure the cart order is still valid.
     if (!isset($order)) {
-      drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
-      drupal_goto('cart');
+     drupal_set_message(t('Your session has expired or is no longer valid.  Please review your order and try again.'));
+     drupal_goto('cart');
     }
     elseif (!empty($_SESSION['uc_cart_order_rebuild'])) {
       drupal_set_message(t('Your shopping cart contents have changed. Please review your order and try again.'));
@@ -229,6 +269,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
   }
 
   foreach ($panes as $id => $pane) {
+
     if ($pane['enabled']) {
       $pane['prev'] = _uc_cart_checkout_prev_pane($panes, $id);
       $pane['next'] = _uc_cart_checkout_next_pane($panes, $id);
@@ -239,7 +280,6 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
       if (isset($form_state['expanded_panes']) && in_array($id, $form_state['expanded_panes'])) {
         $collapsed = FALSE;
       }
-
       $return = $pane['callback']('view', $order, $form, $form_state);
 
       // Add the pane if any display data is returned from the callback.
@@ -257,6 +297,7 @@ function uc_cart_checkout_form($form, &$form_state, $order) {
 
         // Add the contents of the fieldset if any were returned.
         if (!empty($return['contents'])) {
+
           $form['panes'][$id] = array_merge($form['panes'][$id], $return['contents']);
         }
 
@@ -332,6 +373,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   // Validate/process the cart panes.  A FALSE value results in failed checkout.
   $form_state['checkout_valid'] = TRUE;
   foreach (element_children($form_state['values']['panes']) as $pane_id) {
+
     $func = _uc_checkout_pane_data($pane_id, 'callback');
     if (is_string($func) && function_exists($func)) {
       $isvalid = $func('process', $order, $form, $form_state);
@@ -341,7 +383,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
       }
     }
   }
-
+  $form_state['checkout_valid'] = TRUE;
   // Reload line items and save order.
   $order->line_items = uc_order_load_line_items($order);
   uc_order_save($order);
@@ -354,6 +396,7 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
  * @see uc_cart_checkout_form_validate()
  */
 function uc_cart_checkout_form_submit($form, &$form_state) {
+debug('uc_cart_checkout_form_submit');
   if ($form_state['checkout_valid'] === FALSE) {
     $url = $form_state['storage']['base_path'] . '/checkout';
   }
@@ -545,7 +588,6 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   // be completed... used for auto payment in uc_credit.module.
   $order = $form_state['uc_order'];
   $error = FALSE;
-
   // Invoke it on a per-module basis instead of all at once.
   foreach (module_implements('uc_order') as $module) {
     $function = $module . '_uc_order';

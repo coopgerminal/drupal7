@@ -1336,30 +1336,17 @@ function uc_product_table_header() {
   }
   $columns['name'] = array(
     'weight' => 0,
-    //GERMINAL ->
-    //'cell' => array('data' => t('Name'), 'field' => 'n.title'),
     'cell' => array('data' => t('Name')),
-    //GERMINAL <-
   );
-  //GERMINAL ->
-  /*$columns['list_price'] = array(
-    'weight' => 3,
-    'access' => arg(0) == 'admin',
-    'cell' => array('data' => t('List price'), 'field' => 'p.list_price'),
-  );*/
   $columns['codi'] = array(
     'weight' => 4,
     'cell' => array('data' => t('Codi')),
   );
-  /*$columns['price'] = array(
-    'weight' => 5,
-    'cell' => array('data' => t('Price'), 'field' => 'p.sell_price'),
-  );*/
   $columns['price'] = array(
     'weight' => 5,
     'cell' => array('data' => t('Cost')),
   );
-  //GERMINAL <-
+
   if (module_exists('uc_cart') && (arg(0) != 'admin' || $_GET['q'] == 'admin/store/settings/tables/uc_product_table')) {
     $columns['add_to_cart'] = array(
       'weight' => 10,

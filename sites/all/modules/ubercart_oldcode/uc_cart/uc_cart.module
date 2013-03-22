@@ -668,7 +668,7 @@ function uc_cart_view_form($form_state, $items = NULL) {
 
       $description = $display_item['title']['#value'] . $display_item['description']['#value'];
       $form['items'][$i]['desc']['#value'] = $description;
-      
+
       $form['items'][$i]['title']['#type'] = 'value';
       $form['items'][$i]['description']['#type'] = 'value';
 
@@ -677,7 +677,7 @@ function uc_cart_view_form($form_state, $items = NULL) {
           '#value' => '',
         );
       }
-      
+
       //GERMINAL ->
       if ($item->separador)
       {
@@ -1099,7 +1099,8 @@ function uc_cart_get_contents($cid = NULL, $action = NULL) {
     $items[$cid] = array();
     //GERMINAL ->
     //$result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c ON n.nid = c.nid WHERE c.cart_id = '%s'", $cid);
-    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c INNER JOIN {uc_products} p ON n.nid = c.nid AND c.nid = p.nid WHERE c.cart_id = '%s' AND p.habilitat=1 AND p.centre=%d ORDER BY p.ordering, n.title", $cid, $_SESSION['centre_activitat']->uid);
+    $result = db_query("SELECT c.*, n.title, n.vid FROM {node} n INNER JOIN {uc_cart_products} c INNER JOIN {uc_products} p ON n.nid = c.nid AND
+       c.nid = p.nid WHERE c.cart_id = '%s' AND p.habilitat=1 AND p.centre=%d ORDER BY p.ordering, n.title", $cid, $_SESSION['centre_activitat']->uid);
     //GERMINAL <-
 
     while ($item = db_fetch_object($result)) {
@@ -1357,7 +1358,7 @@ function uc_cart_filter_checkout_panes($panes, $remove = NULL) {
 //GERMINAL ->
 // Omple la graella del carrito amb tots els productes disponibles i quantitat 0
 function uc_germinal_omple_graella() {
-    $result = db_query("SELECT nid, model, shippable FROM uc_products ORDER BY nid");
+    $result = db_query("SELECT nid, model, shippable FROM uc_products  ORDER BY nid");
 
     while ($product = db_fetch_object($result)) {
       $product->data['attributes'] = NULL; // Select de la taula uc_product_attributes
@@ -1370,7 +1371,7 @@ function uc_germinal_omple_graella() {
 }
 
 function uc_cart_data_recollida_form($form_state) {
-  if ($form_state['post']['op']=='Seleccionar productes')
+if ($form_state['post']['op']=='Seleccionar productes')
   {
 	$_SESSION['dia_recollida'] = uc_germinal_avui()+($form_state['post']['data']*7*24*60*60);
 	drupal_goto('cart');
@@ -1396,11 +1397,11 @@ function uc_cart_data_recollida_form($form_state) {
     $setmana[$count] = uc_cart_nom_setmana($dia);
     $count++;
   }
-  
+
   $noms_setmana[1] = uc_cart_nom_setmana(uc_germinal_avui()+7*24*60*60);
   $noms_setmana[2] = uc_cart_nom_setmana(uc_germinal_avui()+2*7*24*60*60);
   $noms_setmana[3] = uc_cart_nom_setmana(uc_germinal_avui()+3*7*24*60*60);
-  
+
   if (uc_cart_comprova_data_limit($_SESSION['centre_activitat']) && strcmp($noms_setmana[1], $setmana[1])!=0 && strcmp($noms_setmana[1], $setmana[2])!=0 && strcmp($noms_setmana[1], $setmana[3])!=0)
     $options['1'] = t('Setmana vinent') . ' (' . $noms_setmana[1] . ')';
   if (strcmp($noms_setmana[2], $setmana[1])!=0 && strcmp($noms_setmana[2], $setmana[2])!=0 && strcmp($noms_setmana[2], $setmana[3])!=0)
@@ -1417,7 +1418,7 @@ function uc_cart_data_recollida_form($form_state) {
       drupal_set_message(t('S\'ha superat el termini per poder fer la comanda de la setmana que ve: el l&iacute;mit &eacute;s %dia a les %hores hores.', array('%dia' => uc_germinal_nom_dia($_SESSION['centre_activitat']->dia_limit), '%hores' => $_SESSION['centre_activitat']->hora_limit)));
       drupal_set_message(t('S&iacute; que pots fer comandes per a altres setmanes.'));
     }
-    
+
     $form['data'] = array(
       '#type' => 'select',
       '#options' => $options,
@@ -1429,9 +1430,10 @@ function uc_cart_data_recollida_form($form_state) {
       '#value' => t('Seleccionar productes'),
     );
   }
-  
+
   return $form;
 }
+
 
 function theme_uc_cart_data_recollida_form($form) {
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
@@ -1457,12 +1459,12 @@ function uc_cart_nom_setmana($dia) {
 	$data = t('del') . '  ' . $primer['mday'];
 
   $data .= ' ';
-  
+
   if ($primer['mon']!=$ultim['mon']) {
     $data .= uc_germinal_nom_mes($primer);
     $data .= ' ';
   }
-    
+
   if ($primer['mday']==1 || $ultim['mday']==11)
 	$data .= t('a l\'') . $ultim['mday'];
   else
@@ -1471,7 +1473,7 @@ function uc_cart_nom_setmana($dia) {
   $data .= ' ';
 
   $data .= uc_germinal_nom_mes($ultim);
-  
+
   return utf8_encode($data);
 }
 
@@ -1482,7 +1484,7 @@ function uc_germinal_nom_mes($data) {
     case 2:
       return t('de febrer');
     case 3:
-	  return t('de març');
+	  return t('de marï¿½');
     case 4:
       return t('d\'abril');
     case 5:
@@ -1502,7 +1504,7 @@ function uc_germinal_nom_mes($data) {
     case 12:
       return t('de desembre');
   }
-  
+
   return '';
 }
 
@@ -1523,16 +1525,16 @@ function uc_germinal_nom_dia($dia) {
     case 7:
       return t('diumenge');
   }
-  
+
   return '';
 }
 
 function uc_germinal_setmanes_que_queden($dia) {
   $avui = uc_germinal_avui();
-  
+
   if ($dia<$avui)
     return 0;
-    
+
   return floor(($dia-$avui)/(7*24*60*60));
 }
 
@@ -1550,8 +1552,8 @@ function uc_germinal_ultim_dia_setmana($dia) {
 
 function uc_germinal_avui() {
   $data = getdate(time());
-  
-  // A les 12 (per exemple) per què no molestin els canvis horaris a l'hora de sumar o restar dies o setmanes
+
+  // A les 12 (per exemple) per quï¿½ no molestin els canvis horaris a l'hora de sumar o restar dies o setmanes
   return mktime(12,0,0,$data['mon'],$data['mday'],$data['year']);
 }
 
@@ -1563,7 +1565,7 @@ function uc_cart_get_informacio_centre() {
 
 function uc_cart_get_informacio_soci() {
   global $user;
-  
+
   $result = db_query("SELECT * FROM {uc_socis} s WHERE s.uid = " . $user->uid);
   $soci = db_fetch_object($result);
   return $soci;
@@ -1580,7 +1582,7 @@ function uc_cart_comprova_data_limit($centre, $setmana=NULL) {
     $data = $setmana_vinent;
   }
 
-  // Si la data és de setmanes anteriors o posteriors no hi ha dubte
+  // Si la data ï¿½s de setmanes anteriors o posteriors no hi ha dubte
   if ($data['year']!=$setmana_vinent['year'])
     return $data['year']>$setmana_vinent['year'];
   if ($data['mon']!=$setmana_vinent['mon'])
@@ -1588,8 +1590,8 @@ function uc_cart_comprova_data_limit($centre, $setmana=NULL) {
   if ($data['mday']!=$setmana_vinent['mday'])
     return $data['mday']>$setmana_vinent['mday'];
 
-  // Si estem a la mateixa setmana comprovem l'hora límit
-  // Diumenge és el dia 0
+  // Si estem a la mateixa setmana comprovem l'hora lï¿½mit
+  // Diumenge ï¿½s el dia 0
   if ($ara['wday']==0)
     $ara['wday']=7;
 
@@ -1611,16 +1613,16 @@ function uc_germinal_valida_comanda() {
 
   $items = uc_cart_get_contents();
   $qty = 0;
-  
+
   foreach ($items as $item) {
     $qty += $item->qty;
   }
-  
+
   if ($qty<=0) {
-    drupal_set_message(utf8_encode(t('Comanda no vàlida. No s\'ha seleccionat cap producte')),'error');
+    drupal_set_message(utf8_encode(t('Comanda no vï¿½lida. No s\'ha seleccionat cap producte')),'error');
     return FALSE;
   }
-  
+
   return TRUE;
 }
 //GERMINAL <-

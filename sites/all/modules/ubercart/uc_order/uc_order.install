@@ -238,6 +238,20 @@ function uc_order_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      //GERMINAL ->
+      'centre' => array(
+        'description' => t("Identificador del centre d'activitat."),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'setmana_recollida' => array(
+        'description' => t('Primer dia de la setmana de recollida.'),
+        'type' => 'date',
+        'not null' => TRUE,
+      ),
+      //GERMINAL <-
     ),
     'indexes' => array(
       'uid' => array('uid'),

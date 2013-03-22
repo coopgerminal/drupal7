@@ -205,6 +205,80 @@ function uc_store_menu() {
     'file' => 'uc_store.countries.inc',
   );
 
+   $items['admin/store/settings'] = array(
+    'title' => 'Configuration',
+    'description' => 'Adjust configuration settings for Ubercart.',
+    'page callback' => 'uc_store_configuration_page',
+    'access arguments' => array('administer store'),
+    'weight' => 6,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_store.admin.inc',
+  );
+/* start Germinal*/
+  $items['admin/store/customers/veure'] = array(
+    'title' => 'Veure socis',
+    'description' => 'Veure el llistat de socis per centre',
+    'page callback' => 'uc_store_socis',
+    'access arguments' => array('view customers'),
+    'weight' => -3,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_store.admin.inc',
+  );
+
+
+  $items['admin/store/reports/comandes'] = array(
+    'title' => 'Veure comandes',
+    'description' => 'Veure el llistat de comandes per setmana i centre',
+    'page callback' => 'uc_store_comandes',
+    'access arguments' => array('view customers'),
+    'weight' => -3,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_store.admin.inc',
+  );
+
+ $items['admin/store/customers/soci/%'] = array(
+    'title' => 'Informació del soci',
+    'description' => 'Veure o assignar la informació d\'un soci.',
+    'page callback' => 'uc_store_assignar_soci',
+    'page arguments' => array(4),
+    'access arguments' => array('view customers'),
+    'weight' => -5,
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_store.admin.inc',
+  );
+  $items['admin/store/customers/socis/%'] = array(
+    'title' => 'Informació dels socis d\'un centre',
+    'description' => 'Veura el llistat de socis d\'un centre.',
+    'page callback' => 'uc_store_socis_centre',
+    'page arguments' => array(4),
+    'access arguments' => array('view customers'),
+    'weight' => -5,
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_store.admin.inc',
+  );
+  $items['admin/store/reports/comanda_setmanal/%/%'] = array(
+    'title' => 'Informació de les comandes',
+    'description' => 'Veure comandes.',
+    'page callback' => 'uc_store_comanda_setmanal',
+    'page arguments' => array(4,5),
+    'access arguments' => array('view customers'),
+    'weight' => -5,
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_store.admin.inc',
+  );
+  $items['admin/store/reports/informes/%/%'] = array(
+    'title' => 'Generar els informes',
+    'description' => 'Generar els informes.',
+    'page callback' => 'uc_store_informes',
+    'page arguments' => array(4,5),
+    'access arguments' => array('view customers'),
+    'weight' => -5,
+    'type' => MENU_CALLBACK,
+    'file' => 'uc_store.admin.inc',
+  );
+
+
+/* end Germinal*/
   return $items;
 }
 
@@ -807,6 +881,9 @@ function uc_store_get_icon($path, $small = FALSE, $class = 'uc-store-icon', $alt
       break;
     case 'admin/store/help':
       $file = 'menu_help';
+      break;
+    case 'admin/store/socis':
+      $file = 'menu_orders';
       break;
   }
 

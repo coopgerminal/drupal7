@@ -124,6 +124,7 @@ function uc_product_features($node, $fid = NULL, $pfid = NULL) {
   $rows = array();
 
   $features = uc_product_feature_load_multiple($node->nid);
+
   foreach ($features as $feature) {
     $operations = array(
       'edit' => array('title' => t('edit'), 'href' => 'node/' . $node->nid . '/edit/features/' . $feature->fid . '/' . $feature->pfid),
@@ -467,3 +468,117 @@ function uc_product_class_delete_confirm_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/products/classes';
 }
+
+
+/*germinal*/
+
+/**
+ * List all products.
+ */
+function uc_product_administration($message = NULL, $query = NULL, $count_query = NULL, $page_length = 25) {
+  $header = array();
+  $tbl_columns = uc_product_table_header();
+  
+ $header = array(
+      
+      array('data' => t('Habilitat') ),//, 'field' => 'p.habilitat'),
+      array('data' => t('Nom') ),//,  'field' => 'n.titol'),
+      array('data' => t('Codi') ),//, 'field' => 'p.codi'),
+		array('data' => t('Cost') ),//, 'field' => 'p.cost'),
+		array('data' => t('Preu Venda') ),//, 'field' => 'p.sell_price'),
+		
+    );
+  
+  global $user;
+  $result = db_query("SELECT centre FROM {uc_socis} s WHERE s.uid = " . $user->uid);
+  $soci = $result->fetchAssoc();
+ 
+   
+   if (is_null($query)) {
+    $query = db_select('node', 'n')->extend('PagerDefault');
+    $query->innerJoin('uc_products', 'p','n.vid = p.vid');
+	 $query->where('p.centre = :socicentre',array(':socicentre'=> $soci['centre']));
+	 $query->fields('p',array( 'nid','habilitat','codi','cost','separador','ordering','sell_price'));
+    $query->fields('n',array( 'title' ));
+	 $query->orderBy('ordering'  );
+	 $query->orderBy('title' );
+	 $query->orderBy('nid' );
+	 $query->limit(50);
+	  
+	 $result = $query->execute();
+  }
+
+
+  $rows = array();
+  foreach($result as $producte ) {
+  	 if($producte->habilitat ){
+  	 	$habilitat =  l('<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/ok.png" />', 'node/'. $producte->nid, array('html' => TRUE));
+  	 }else {
+  	 	$habilitat =  l('<img src="'. base_path() . drupal_get_path('module', 'uc_product') . '/imatges/notok.png" />', 'node/'. $producte->nid, array('html' => TRUE));
+  	 }
+    if($producte->separador){
+      $nom = '<b> '.l( $producte->title,'node/'. $producte->nid).' </b>';
+      $habilitat = '';
+    }else{
+    	$nom = l($producte->title,'node/'. $producte->nid);
+    	 }
+    $codi = $producte->codi;
+    $cost = $producte->cost;
+    $ordering = $producte->ordering;
+    $rows[] = array(
+	 $habilitat ,$nom, $codi,$cost,$producte->sell_price);
+  }
+ 
+  $output = theme('pager',array('tags' => array()));
+  $output .=  theme_table(array('header'=>$header,
+    'rows'=>$rows,
+    'attributes'=>array(),
+    'caption'=>'',
+    'colgroups'=>array(),
+    'sticky'=>'',
+    'empty'=>''));
+
+  $output .= theme('pager',array('tags' => array()));
+  return $output;
+  /*
+  $order = substr(tablesort_sql($header), 10);
+  if (empty($_REQUEST['order'])) {
+    $order = 'p.ordering, n.title, n.nid';
+  }
+
+  //GERMINAL ->
+
+  //GERMINAL <-
+
+  $nids = array();
+  // Display 50 products per page.
+  $result = pager_query("SELECT n.nid FROM {node} AS n INNER JOIN {uc_products} AS p ON n.vid = p.vid WHERE p.centre=" . $soci['centre'] . " ORDER BY ". $order, 50, 0, NULL);
+  while ($product = db_fetch_object($result)) {
+    $nids[] = $product->nid;
+  }
+
+  $table = tapir_get_table('uc_product_table', $nids);
+
+  // Display the product table and pager if necessary.
+  //GERMINAL ->
+  //$output .= drupal_render($table) . theme('pager');
+  $output .= '<div id="llista-productes">' . drupal_render($table) . '</div>' . theme('pager');
+  $output .= drupal_get_form('uc_product_opcions');
+  //GERMINAL <-
+
+  return $output;*/
+ 
+}
+
+function uc_product_habilitacio() {
+//  drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
+
+  $output = '<div id="cart-form-data">';
+  $output .= render(drupal_get_form('uc_product_habilitacio_form'));
+    $output.= '</div>';
+ 
+  return $output;
+  
+  
+}
+
